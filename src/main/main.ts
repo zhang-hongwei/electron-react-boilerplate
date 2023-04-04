@@ -14,7 +14,33 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+const child_process = require('child_process');
 
+function startNodeService() {
+  // Use child_process to spawn a new node process
+  const nodeProcess = child_process.spawn('node', [
+    path.join(__dirname, 'index.js'),
+  ]);
+
+  // When data is received from the node process, log it to the console
+  nodeProcess.stdout.on('data', (data) => {
+    console.log(`stdout: ${data}`);
+  });
+
+  // When an error occurs with the node process, log it to the console
+  nodeProcess.stderr.on('data', (data) => {
+    console.error(`stderr: ${data}`);
+  });
+
+  // When the node process exits, log its exit code to the console
+  nodeProcess.on('close', (code) => {
+    console.log(`child process exited with code ${code}`);
+  });
+}
+
+console.log('log============>>', child_process);
+
+exports.onClick = () => console.log('Yay');
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
@@ -79,6 +105,10 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
+  });
+
+  ipcMain.handle('ping', () => {
+    startNodeService();
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
